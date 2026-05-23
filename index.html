@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<title>JARVIS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#020209;--cyan:#00e5ff;--blue:#1a6fff;--pur:#8b00ff;
+  --grn:#00ff99;--red:#ff3366;--txt:#b8deff;--dim:#2a4a6a;
+  --surf:rgba(0,180,255,0.05);--bdr:rgba(0,180,255,0.13);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;}
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,180,255,0.025) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,180,255,0.025) 1px,transparent 1px);
+  background-size:44px 44px;}
+.bg-rad{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(0,80,255,0.07),transparent 70%);}
+.app{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;height:100dvh;}
+
+header{width:100%;padding:12px 18px 10px;display:flex;justify-content:space-between;align-items:center;
+  border-bottom:1px solid var(--bdr);background:rgba(2,2,9,0.9);backdrop-filter:blur(12px);flex-shrink:0;}
+.logo{font-family:'Orbitron',monospace;font-size:18px;font-weight:900;letter-spacing:.3em;color:var(--cyan);
+  text-shadow:0 0 18px rgba(0,229,255,.55);}
+.sub{font-size:8px;letter-spacing:.18em;color:var(--dim);font-family:'Orbitron',monospace;margin-top:2px;}
+.hdr-r{display:flex;gap:8px;align-items:center;}
+.pill{display:flex;align-items:center;gap:6px;background:var(--surf);border:1px solid var(--bdr);
+  padding:5px 10px;border-radius:20px;font-size:9px;font-family:'Orbitron',monospace;color:var(--dim);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--dim);transition:all .3s;}
+.dot.on{background:var(--grn);box-shadow:0 0 7px var(--grn);animation:bth 2s infinite;}
+.dot.err{background:var(--red);}
+.dot.spin{background:var(--cyan);animation:bth .7s infinite;}
+@keyframes bth{0%,100%{opacity:1;}50%{opacity:.3;}}
+.hbtn{background:none;border:1px solid var(--bdr);color:var(--dim);width:30px;height:30px;
+  border-radius:8px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.hbtn:hover{border-color:var(--cyan);color:var(--cyan);}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:100;display:none;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;align-items:flex-end;}
+.modal{width:100%;max-height:88vh;background:rgba(4,4,16,0.98);border-top:1px solid var(--bdr);
+  border-radius:20px 20px 0 0;padding:20px;overflow-y:auto;animation:sup .3s ease-out;}
+@keyframes sup{from{transform:translateY(50px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.mtitle{font-family:'Orbitron',monospace;font-size:11px;letter-spacing:.2em;color:var(--cyan);margin-bottom:16px;}
+.mrow{margin-bottom:13px;}
+.mlbl{font-size:10px;letter-spacing:.1em;color:var(--dim);margin-bottom:5px;display:block;text-transform:uppercase;}
+.minput{width:100%;background:rgba(0,180,255,0.05);border:1px solid var(--bdr);color:var(--txt);
+  font-family:'Rajdhani',sans-serif;font-size:14px;padding:9px 12px;border-radius:9px;outline:none;resize:vertical;}
+.minput:focus{border-color:var(--cyan);}
+.minput::placeholder{color:var(--dim);}
+textarea.minput{min-height:75px;}
+.mbtn{background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;color:#000;
+  font-family:'Orbitron',monospace;font-size:10px;font-weight:700;padding:11px;border-radius:9px;
+  cursor:pointer;letter-spacing:.08em;width:100%;margin-top:4px;}
+.mbtn.sec{background:var(--surf);border:1px solid var(--bdr);color:var(--txt);margin-top:8px;}
+.note-item{background:var(--surf);border:1px solid var(--bdr);border-radius:9px;padding:10px 12px;
+  margin-bottom:8px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+.note-txt{font-size:13px;line-height:1.5;flex:1;}
+.note-time{font-size:9px;color:var(--dim);font-family:'Orbitron',monospace;margin-top:2px;}
+.del-btn{background:none;border:none;color:var(--dim);cursor:pointer;font-size:15px;padding:0 4px;}
+.del-btn:hover{color:var(--red);}
+
+.hud{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  position:relative;width:100%;padding:8px 0 0;overflow:hidden;}
+.rings{position:relative;width:min(240px,64vw);height:min(240px,64vw);flex-shrink:0;}
+.rings svg{position:absolute;inset:0;width:100%;height:100%;}
+.r-out{transform-origin:50% 50%;animation:cw 20s linear infinite;stroke:var(--cyan);stroke-width:.7;fill:none;opacity:.22;stroke-dasharray:3 10;}
+.r-mid{transform-origin:50% 50%;animation:ccw 11s linear infinite;stroke:var(--blue);stroke-width:1;fill:none;opacity:.32;stroke-dasharray:55 25;}
+.r-in{transform-origin:50% 50%;animation:cw 6s linear infinite;stroke:var(--cyan);stroke-width:1.4;fill:none;opacity:.45;stroke-dasharray:18 82;}
+.r-p{fill:none;stroke:var(--cyan);stroke-width:.5;opacity:0;animation:rpop 3s ease-out infinite;}
+.r-p2{fill:none;stroke:var(--cyan);stroke-width:.5;opacity:0;animation:rpop 3s ease-out 1.5s infinite;}
+@keyframes cw{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes ccw{from{transform:rotate(0)}to{transform:rotate(-360deg)}}
+@keyframes rpop{0%{opacity:0;r:72}55%{opacity:.25}100%{opacity:0;r:135}}
+.hud.listening .r-out,.hud.wake .r-out{animation-duration:3s;opacity:.8;stroke:var(--grn);}
+.hud.listening .r-mid,.hud.wake .r-mid{animation-duration:1.5s;opacity:.9;stroke:var(--grn);}
+.hud.listening .r-in,.hud.wake .r-in{animation-duration:1s;opacity:1;stroke:var(--grn);}
+.hud.thinking .r-out{animation-duration:2.5s;opacity:.65;stroke:var(--pur);}
+.hud.thinking .r-mid{animation-duration:1s;opacity:.9;stroke:var(--pur);}
+.hud.thinking .r-in{animation-duration:.7s;opacity:1;stroke:var(--pur);}
+.hud.speaking .r-mid{animation-duration:2s;opacity:.7;}
+.hud.speaking .r-in{animation-duration:1s;opacity:1;}
+.orb{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:min(74px,20vw);height:min(74px,20vw);border-radius:50%;
+  background:radial-gradient(circle,rgba(0,110,255,.28),rgba(0,229,255,.06) 65%,transparent);
+  border:1.5px solid rgba(0,229,255,.35);display:flex;align-items:center;justify-content:center;
+  box-shadow:0 0 26px rgba(0,229,255,.12);transition:all .4s;}
+.orb-l{font-family:'Orbitron',monospace;font-size:clamp(17px,5vw,25px);font-weight:900;
+  color:var(--cyan);text-shadow:0 0 16px rgba(0,229,255,.8);transition:all .3s;}
+.hud.listening .orb,.hud.wake .orb{background:radial-gradient(circle,rgba(0,255,100,.2),rgba(0,255,100,.04) 70%,transparent);border-color:rgba(0,255,153,.6);box-shadow:0 0 36px rgba(0,255,100,.2);}
+.hud.listening .orb-l,.hud.wake .orb-l{color:var(--grn);text-shadow:0 0 16px rgba(0,255,100,.9);}
+.hud.thinking .orb{background:radial-gradient(circle,rgba(139,0,255,.2),rgba(100,0,255,.04) 70%,transparent);border-color:rgba(139,0,255,.55);animation:opuls .55s ease infinite;}
+.hud.thinking .orb-l{color:var(--pur);text-shadow:0 0 16px rgba(139,0,255,.9);}
+.hud.speaking .orb{animation:ospk .75s ease-in-out infinite;}
+@keyframes opuls{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.09);}}
+@keyframes ospk{0%,100%{transform:translate(-50%,-50%) scale(1);}30%{transform:translate(-50%,-50%) scale(1.06);}70%{transform:translate(-50%,-50%) scale(.97);}}
+.stlbl{margin-top:11px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.22em;
+  color:var(--dim);text-transform:uppercase;transition:color .3s;text-align:center;}
+.hud.listening .stlbl,.hud.wake .stlbl{color:var(--grn);}
+.hud.thinking .stlbl{color:var(--pur);}
+.hud.speaking .stlbl{color:var(--cyan);}
+
+.tscript{width:100%;max-width:500px;padding:0 14px;margin-top:10px;flex:1;
+  overflow-y:auto;display:flex;flex-direction:column;gap:7px;}
+.tscript::-webkit-scrollbar{width:2px;}
+.tscript::-webkit-scrollbar-thumb{background:var(--bdr);}
+.tl{padding:9px 13px;border-radius:10px;font-size:14px;line-height:1.55;
+  animation:fup .25s ease-out;word-break:break-word;}
+@keyframes fup{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+.tl.user{background:rgba(0,100,255,.1);border:1px solid rgba(0,100,255,.2);color:#90b8ff;
+  align-self:flex-end;max-width:86%;font-size:13px;}
+.tl.ai{background:rgba(0,229,255,.04);border:1px solid var(--bdr);color:var(--txt);align-self:flex-start;max-width:96%;}
+.tspr{font-size:8px;letter-spacing:.16em;margin-bottom:3px;font-family:'Orbitron',monospace;}
+.tl.user .tspr{color:rgba(100,150,255,.4);}
+.tl.ai .tspr{color:rgba(0,229,255,.35);}
+.tl code{font-family:'Courier New',monospace;font-size:12px;background:rgba(0,229,255,.08);
+  border:1px solid rgba(0,229,255,.15);padding:1px 5px;border-radius:4px;color:var(--cyan);}
+.tl pre{background:rgba(0,0,20,.8);border:1px solid rgba(0,229,255,.14);padding:10px;
+  border-radius:8px;overflow-x:auto;margin:7px 0;font-family:'Courier New',monospace;font-size:11px;}
+.atag{display:inline-flex;align-items:center;gap:5px;background:rgba(0,229,255,.07);
+  border:1px solid rgba(0,229,255,.2);border-radius:20px;padding:3px 10px;margin-top:5px;
+  font-size:10px;font-family:'Orbitron',monospace;color:var(--cyan);}
+.tdots{display:flex;gap:5px;align-items:center;padding:13px 15px;background:rgba(0,229,255,.03);
+  border:1px solid var(--bdr);border-radius:10px;align-self:flex-start;}
+.tdots span{width:6px;height:6px;border-radius:50%;background:var(--pur);animation:blnk 1.2s ease-in-out infinite;}
+.tdots span:nth-child(2){animation-delay:.2s;}
+.tdots span:nth-child(3){animation-delay:.4s;}
+@keyframes blnk{0%,80%,100%{opacity:.15;transform:scale(.8);}40%{opacity:1;transform:scale(1.1);}}
+.errline{background:rgba(255,50,80,.07);border:1px solid rgba(255,50,80,.22);color:var(--red);
+  padding:9px 13px;border-radius:10px;font-size:12px;animation:fup .25s;align-self:stretch;}
+
+.ctrl{width:100%;padding:10px 14px 16px;display:flex;flex-direction:column;align-items:center;gap:9px;
+  flex-shrink:0;border-top:1px solid var(--bdr);background:rgba(2,2,9,.93);backdrop-filter:blur(12px);}
+.txtrow{display:flex;gap:7px;width:100%;max-width:500px;background:rgba(0,180,255,.05);
+  border:1px solid var(--bdr);border-radius:12px;padding:6px 6px 6px 13px;transition:border-color .2s;}
+.txtrow:focus-within{border-color:rgba(0,229,255,.38);}
+#ti{flex:1;background:transparent;border:none;color:var(--txt);font-family:'Rajdhani',sans-serif;font-size:15px;outline:none;}
+#ti::placeholder{color:var(--dim);}
+.sbtn{width:35px;height:35px;flex-shrink:0;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  border:none;border-radius:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.sbtn:active{transform:scale(.93);}
+.sbtn:disabled{opacity:.35;cursor:not-allowed;}
+.sbtn svg{width:14px;height:14px;fill:#000;}
+.mcrow{display:flex;align-items:center;gap:14px;}
+.sideb{display:flex;flex-direction:column;gap:7px;}
+.sdb{background:none;border:1px solid var(--bdr);color:var(--dim);width:34px;height:34px;
+  border-radius:9px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;}
+.sdb:hover,.sdb.active-btn{border-color:var(--grn);color:var(--grn);}
+.mic{width:62px;height:62px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,100,255,.26),rgba(0,180,255,.07));
+  border:1.5px solid rgba(0,180,255,.3);display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:all .3s;position:relative;box-shadow:0 0 16px rgba(0,180,255,.07);}
+.mic svg{width:22px;height:22px;fill:var(--cyan);}
+.mic.act{background:radial-gradient(circle,rgba(0,255,100,.26),rgba(0,255,100,.04));
+  border-color:rgba(0,255,153,.65);box-shadow:0 0 36px rgba(0,255,100,.26);animation:mglow 1s ease-in-out infinite;}
+.mic.act svg{fill:var(--grn);}
+@keyframes mglow{0%,100%{box-shadow:0 0 26px rgba(0,255,100,.22);}50%{box-shadow:0 0 52px rgba(0,255,100,.52);}}
+.mring{position:absolute;width:100%;height:100%;border-radius:50%;border:1px solid var(--grn);opacity:0;}
+.mic.act .mring{animation:mra 1.1s ease-out infinite;}
+@keyframes mra{0%{transform:scale(1);opacity:.5;}100%{transform:scale(1.85);opacity:0;}}
+.wbadge{display:none;position:absolute;top:-7px;right:-7px;background:var(--grn);
+  width:15px;height:15px;border-radius:50%;border:2px solid var(--bg);box-shadow:0 0 7px var(--grn);}
+.mic.wake-on .wbadge{display:block;}
+.mhint{font-size:9px;letter-spacing:.13em;color:var(--dim);font-family:'Orbitron',monospace;text-align:center;text-transform:uppercase;}
+
+.toast{position:fixed;bottom:86px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:rgba(0,229,255,.09);border:1px solid var(--bdr);color:var(--cyan);font-size:10px;
+  font-family:'Orbitron',monospace;padding:8px 16px;border-radius:20px;letter-spacing:.07em;
+  opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;z-index:300;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+<div class="bg-rad"></div>
+<div class="app">
+
+<header>
+  <div>
+    <div class="logo">JARVIS</div>
+    <div class="sub">YOUR PERSONAL AI · V3.0</div>
+  </div>
+  <div class="hdr-r">
+    <div class="pill"><div class="dot" id="sDot"></div><span id="sText">OFFLINE</span></div>
+    <button class="hbtn" onclick="openM('notesM')" title="Notes">📝</button>
+    <button class="hbtn" onclick="openM('settingsM')" title="Settings">⚙</button>
+  </div>
+</header>
+
+<!-- SETTINGS MODAL -->
+<div class="overlay" id="settingsM" onclick="bgClose(event,'settingsM')">
+  <div class="modal">
+    <div class="mtitle">⚙ CONFIGURATION</div>
+    <div class="mrow">
+      <span class="mlbl">Backend URL — paste ngrok link from Colab</span>
+      <input class="minput" id="cfgUrl" type="url" placeholder="https://xxxx.ngrok-free.app"/>
+    </div>
+    <div class="mrow">
+      <span class="mlbl">Your Name</span>
+      <input class="minput" id="cfgName" placeholder="Pranay"/>
+    </div>
+    <div class="mrow">
+      <span class="mlbl">Your City</span>
+      <input class="minput" id="cfgCity" placeholder="Hyderabad, India"/>
+    </div>
+    <div class="mrow">
+      <span class="mlbl">Contacts — one per line (Name, Number)</span>
+      <textarea class="minput" id="cfgContacts" placeholder="Mom, +91XXXXXXXXXX&#10;Dad, +91XXXXXXXXXX&#10;Friend, +91XXXXXXXXXX"></textarea>
+    </div>
+    <div class="mrow">
+      <span class="mlbl">About You — goals, interests (helps Jarvis know you)</span>
+      <textarea class="minput" id="cfgAbout" placeholder="B.Tech AI/ML student. Goals: build SaaS, move to Australia..."></textarea>
+    </div>
+    <button class="mbtn" onclick="saveSettings()">SAVE &amp; CONNECT</button>
+    <button class="mbtn sec" onclick="closeM('settingsM')">CANCEL</button>
+  </div>
+</div>
+
+<!-- NOTES MODAL -->
+<div class="overlay" id="notesM" onclick="bgClose(event,'notesM')">
+  <div class="modal">
+    <div class="mtitle">📝 SAVED NOTES</div>
+    <div id="notesList"></div>
+    <button class="mbtn sec" onclick="closeM('notesM')">CLOSE</button>
+  </div>
+</div>
+
+<!-- MAIN HUD -->
+<div class="hud" id="hud">
+  <div class="rings">
+    <svg viewBox="0 0 300 300">
+      <circle class="r-p"  cx="150" cy="150" r="72"/>
+      <circle class="r-p2" cx="150" cy="150" r="72"/>
+      <circle class="r-out" cx="150" cy="150" r="127"/>
+      <circle class="r-mid" cx="150" cy="150" r="106"/>
+      <circle class="r-in"  cx="150" cy="150" r="86"/>
+      <g stroke="rgba(0,229,255,0.17)" stroke-width="1">
+        <line x1="150" y1="20" x2="150" y2="31"/>
+        <line x1="150" y1="269" x2="150" y2="280"/>
+        <line x1="20"  y1="150" x2="31"  y2="150"/>
+        <line x1="269" y1="150" x2="280" y2="150"/>
+      </g>
+      <path d="M42 62 L42 42 L62 42"   stroke="rgba(0,229,255,0.25)" stroke-width="1.5" fill="none"/>
+      <path d="M258 62 L258 42 L238 42" stroke="rgba(0,229,255,0.25)" stroke-width="1.5" fill="none"/>
+      <path d="M42 238 L42 258 L62 258" stroke="rgba(0,229,255,0.25)" stroke-width="1.5" fill="none"/>
+      <path d="M258 238 L258 258 L238 258" stroke="rgba(0,229,255,0.25)" stroke-width="1.5" fill="none"/>
+    </svg>
+    <div class="orb"><span class="orb-l" id="orbL">J</span></div>
+  </div>
+  <div class="stlbl" id="stLbl">STANDBY</div>
+  <div class="tscript" id="ts"></div>
+</div>
+
+<!-- CONTROLS -->
+<div class="ctrl">
+  <div class="txtrow">
+    <input type="text" id="ti" placeholder="Type a command or question…" onkeydown="if(event.key==='Enter')sendText()"/>
+    <button class="sbtn" id="sendBtn" onclick="sendText()">
+      <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2v7z"/></svg>
+    </button>
+  </div>
+  <div class="mcrow">
+    <div class="sideb">
+      <button class="sdb" onclick="clearAll()" title="Clear">↺</button>
+      <button class="sdb" onclick="stopSpeak()" title="Mute">🔇</button>
+    </div>
+    <button class="mic" id="micBtn" onclick="toggleMic()">
+      <div class="mring"></div>
+      <div class="wbadge"></div>
+      <svg viewBox="0 0 24 24"><path d="M12 1a4 4 0 0 0-4 4v6a4 4 0 0 0 8 0V5a4 4 0 0 0-4-4zm0 2a2 2 0 0 1 2 2v6a2 2 0 0 1-4 0V5a2 2 0 0 1 2-2zm-7 9a7 7 0 0 0 14 0h-2a5 5 0 0 1-10 0H5zm7 9v-2h-1v2H9v1h6v-1h-2v-2h-1z"/></svg>
+    </button>
+    <div class="sideb">
+      <button class="sdb" id="wakeBtn" onclick="toggleWake()" title="Wake word">👂</button>
+      <button class="sdb" onclick="checkHealth()" title="Test connection">⚡</button>
+    </div>
+  </div>
+  <div class="mhint" id="mhint">TAP MIC TO SPEAK · TAP 👂 FOR WAKE WORD MODE</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────────
+const SID = 'j_' + Math.random().toString(36).slice(2,8);
+let url='', profile={}, contacts={}, notes=[];
+let loading=false, speaking=false, wakeMode=false, cmdMode=false, recogOn=false;
+let rec=null, synth=(typeof speechSynthesis !== 'undefined' ? speechSynthesis : null), voice=null, cmdTimer=null;
+
+// ── INIT ───────────────────────────────────────────
+window.onload = () => {
+  loadData();
+  loadVoices();
+  if (synth && 'onvoiceschanged' in synth) synth.onvoiceschanged = loadVoices;
+  setupRec();
+  if (!url) { setTimeout(() => openM('settingsM'), 400); }
+  else checkHealth();
+  if ('Notification' in window) Notification.requestPermission();
+};
+
+// ── STORAGE ────────────────────────────────────────
+function g(k){ return localStorage.getItem(k); }
+function s(k,v){ localStorage.setItem(k,v); }
+function el(i){ return document.getElementById(i); }
+
+function loadData() {
+  url      = g('j_url') || '';
+  profile  = JSON.parse(g('j_profile') || '{}');
+  contacts = JSON.parse(g('j_contacts') || '{}');
+  notes    = JSON.parse(g('j_notes') || '[]');
+  if (url)             el('cfgUrl').value      = url;
+  if (profile.name)    el('cfgName').value     = profile.name;
+  if (profile.city)    el('cfgCity').value     = profile.city;
+  if (profile.about)   el('cfgAbout').value    = profile.about;
+  const cl = Object.entries(contacts).map(([k,v]) => k+', '+v).join('\n');
+  if (cl) el('cfgContacts').value = cl;
+}
+
+function saveSettings() {
+  const u = el('cfgUrl').value.trim().replace(/\/$/,'');
+  if (!u) { showToast('ENTER BACKEND URL'); return; }
+  url = u; s('j_url', url);
+  profile = { name: el('cfgName').value.trim()||'Pranay', city: el('cfgCity').value.trim(), about: el('cfgAbout').value.trim() };
+  s('j_profile', JSON.stringify(profile));
+  contacts = {};
+  el('cfgContacts').value.trim().split('\n').forEach(line => {
+    const p = line.split(',');
+    if (p.length >= 2) contacts[p[0].trim().toLowerCase()] = p.slice(1).join(',').trim();
+  });
+  s('j_contacts', JSON.stringify(contacts));
+  closeM('settingsM');
+  showToast('SAVED!');
+  checkHealth();
+}
+
+// ── VOICE OUTPUT ───────────────────────────────────
+function loadVoices() {
+  if (!synth) return;
+  const vs = synth.getVoices();
+  if (!vs.length) return;
+  const picks = [
+    v => /Google UK English Male/i.test(v.name),
+    v => /Daniel/i.test(v.name),
+    v => /en.*GB/i.test(v.lang),
+    v => /en/i.test(v.lang) && !/female/i.test(v.name),
+    v => /en/i.test(v.lang),
+  ];
+  for (const fn of picks) { const f=vs.find(fn); if(f){voice=f;break;} }
+}
+
+function speak(text) {
+  if (!synth) { console.warn('Speech synthesis not available'); return; }
+  synth.cancel();
+  const clean = text.replace(/```[\s\S]*?```/g,'').replace(/`([^`]+)`/g,'$1')
+    .replace(/\*\*(.*?)\*\*/g,'$1').replace(/#{1,6} /g,'').replace(/\n+/g,' ');
+  const u = new SpeechSynthesisUtterance(clean);
+  u.rate=0.93; u.pitch=0.88; u.volume=1;
+  if (voice) u.voice = voice;
+  u.onstart = () => { speaking=true; setHud('speaking'); setSt('SPEAKING'); };
+  u.onend = u.onerror = () => {
+    speaking=false;
+    if (!loading) { setHud('idle'); setSt(wakeMode ? 'LISTENING FOR "HEY JARVIS"' : 'STANDBY'); }
+    if (wakeMode && !recogOn) restartWake();
+  };
+  synth.speak(u);
+}
+
+function stopSpeak() { if(synth) synth.cancel(); speaking=false; setHud('idle'); setSt(wakeMode?'LISTENING FOR "HEY JARVIS"':'STANDBY'); }
+
+// ── VOICE INPUT ────────────────────────────────────
+function setupRec() {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { el('mhint').textContent='VOICE NEEDS CHROME ON ANDROID'; return; }
+  rec = new SR();
+  rec.lang='en-US'; rec.interimResults=true;
+
+  rec.onresult = e => {
+    const last = e.results[e.results.length-1];
+    const txt  = last[0].transcript.toLowerCase().trim();
+
+    // Wake word detection
+    if (wakeMode && !cmdMode) {
+      if (txt.includes('hey jarvis') || txt.includes('jarvis')) {
+        startCmd(); return;
+      }
+    }
+    // Command capture
+    if (cmdMode) {
+      el('ti').value = last[0].transcript;
+      if (last.isFinal) {
+        const cmd = last[0].transcript.trim().replace(/hey jarvis/gi,'').replace(/jarvis/gi,'').trim();
+        clearTimeout(cmdTimer);
+        if (cmd) { endCmd(); sendMsg(cmd); }
+      }
+    }
+    // Manual mic
+    if (!wakeMode && !cmdMode) {
+      el('ti').value = last[0].transcript;
+      if (last.isFinal) {
+        const t = last[0].transcript.trim();
+        if (t) { endListen(); sendMsg(t); }
+      }
+    }
+  };
+
+  rec.onerror = e => {
+    recogOn=false;
+    if (e.error!=='no-speech'&&e.error!=='aborted') showToast('MIC ERROR: '+e.error.toUpperCase());
+    if (cmdMode) endCmd();
+  };
+
+  rec.onend = () => {
+    recogOn=false;
+    if (wakeMode && !loading && !speaking) restartWake();
+  };
+}
+
+function restartWake() {
+  if (!rec||recogOn) return;
+  rec.continuous=true;
+  setTimeout(() => { try { rec.start(); recogOn=true; } catch(e){} }, 400);
+}
+
+function startCmd() {
+  cmdMode=true; rec.stop(); recogOn=false;
+  setHud('listening'); setSt('SPEAK YOUR COMMAND');
+  el('micBtn').classList.add('act'); el('ti').value='';
+  setTimeout(() => { try { rec.continuous=false; rec.start(); recogOn=true; } catch(e){} }, 250);
+  cmdTimer = setTimeout(() => { if(cmdMode) endCmd(); }, 8000);
+}
+
+function endCmd() { cmdMode=false; el('micBtn').classList.remove('act'); if(!loading&&!speaking){setHud('idle');setSt('LISTENING FOR "HEY JARVIS"');} }
+function endListen() { recogOn=false; el('micBtn').classList.remove('act'); el('mhint').textContent='TAP MIC TO SPEAK · TAP 👂 FOR WAKE WORD MODE'; }
+
+function toggleMic() {
+  if (!rec) { showToast('USE CHROME FOR VOICE'); return; }
+  if (wakeMode) return;
+  if (recogOn) {
+    rec.stop(); recogOn=false;
+    el('micBtn').classList.remove('act');
+    if(!loading) { setHud('idle'); setSt('STANDBY'); }
+  } else {
+    if (!url) { showToast('SET BACKEND URL FIRST'); openM('settingsM'); return; }
+    if (speaking) stopSpeak();
+    rec.continuous=false;
+    try { rec.start(); recogOn=true; } catch(e){return;}
+    el('micBtn').classList.add('act');
+    el('mhint').textContent='LISTENING...';
+    setHud('listening'); setSt('LISTENING'); el('ti').value='';
+  }
+}
+
+function toggleWake() {
+  if (!rec) { showToast('USE CHROME FOR VOICE'); return; }
+  wakeMode = !wakeMode;
+  const wb = el('wakeBtn');
+  const mb = el('micBtn');
+  if (wakeMode) {
+    wb.classList.add('active-btn'); mb.classList.add('wake-on');
+    el('mhint').textContent='SAY "HEY JARVIS" ANYTIME';
+    setSt('LISTENING FOR "HEY JARVIS"');
+    restartWake(); showToast('WAKE WORD ON');
+  } else {
+    wb.classList.remove('active-btn'); mb.classList.remove('wake-on');
+    try { rec.stop(); } catch(e){}
+    recogOn=false; cmdMode=false;
+    el('mhint').textContent='TAP MIC TO SPEAK · TAP 👂 FOR WAKE WORD MODE';
+    setSt('STANDBY'); setHud('idle'); showToast('WAKE WORD OFF');
+  }
+}
+
+// ── MESSAGING ──────────────────────────────────────
+function sendText() { const v=el('ti').value.trim(); if(v){el('ti').value='';sendMsg(v);} }
+
+async function sendMsg(msg) {
+  if (!msg||loading) return;
+  if (!url) { showToast('SET BACKEND URL FIRST'); openM('settingsM'); return; }
+  loading=true; el('sendBtn').disabled=true;
+  addLine('user', msg);
+  const dots = addDots();
+  setHud('thinking'); setSt('PROCESSING'); setOrb('…');
+
+  const pctx = JSON.stringify({
+    name: profile.name||'Pranay',
+    city: profile.city||'',
+    about: profile.about||'',
+    contacts: Object.keys(contacts)
+  });
+
+  try {
+    const res = await fetch(url+'/chat', {
+      method:'POST', mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ message:msg, session_id:SID, profile_context:pctx })
+    });
+    removeDots(dots);
+    if (!res.ok) throw new Error('Server error '+res.status);
+    const data = await res.json();
+
+    // Parse response
+    let reply='', action={type:'none',data:''};
+    try {
+      const parsed = data.structured || JSON.parse(data.reply||'{}');
+      reply  = parsed.reply  || data.reply || '';
+      action = parsed.action || {type:'none',data:''};
+    } catch {
+      reply = data.reply || 'Sorry, I could not process that.';
+    }
+
+    addLine('ai', reply, action);
+    setStatus('on','ONLINE');
+    doAction(action);
+    speak(reply);
+
+  } catch(err) {
+    removeDots(dots);
+    addErr('FAILED: '+err.message+' — Check your ngrok URL in ⚙ settings');
+    setStatus('err','ERROR'); setHud('idle'); setSt('ERROR');
+  }
+
+  loading=false; el('sendBtn').disabled=false; setOrb('J');
+  if (!speaking) { setHud('idle'); setSt(wakeMode?'LISTENING FOR "HEY JARVIS"':'STANDBY'); }
+}
+
+// ── ACTIONS ────────────────────────────────────────
+function doAction(a) {
+  if (!a||a.type==='none'||!a.data) return;
+  setTimeout(() => {
+    try {
+      switch(a.type) {
+        case 'call': {
+          const n = contacts[a.data.toLowerCase()] || a.data;
+          window.location.href='tel:'+n; break;
+        }
+        case 'sms': {
+          let d=a.data; try{d=JSON.parse(d);}catch{}
+          const n = contacts[(d.to||'').toLowerCase()] || d.to||'';
+          window.location.href='sms:'+n+(d.message?'?body='+encodeURIComponent(d.message):''); break;
+        }
+        case 'maps':
+          window.open('https://maps.google.com/?q='+encodeURIComponent(a.data),'_blank'); break;
+        case 'youtube':
+          window.open('https://youtube.com/results?search_query='+encodeURIComponent(a.data),'_blank'); break;
+        case 'search':
+          window.open('https://google.com/search?q='+encodeURIComponent(a.data),'_blank'); break;
+        case 'reminder': {
+          let d=a.data; try{if(typeof d==='string')d=JSON.parse(d);}catch{}
+          const mins=parseInt(d.minutes||d.mins||5);
+          const rmsg=d.message||d.msg||'Reminder';
+          showToast('REMINDER SET: '+mins+'min');
+          setTimeout(() => {
+            if(Notification.permission==='granted') new Notification('JARVIS',{body:rmsg});
+            addLine('ai','⏰ Reminder: '+rmsg); speak('Sir, reminder: '+rmsg);
+          }, mins*60000); break;
+        }
+        case 'note':
+          saveNote(a.data); break;
+        case 'open': case 'url':
+          window.open(a.data,'_blank'); break;
+      }
+    } catch(e){ console.warn(e); }
+  }, 700);
+}
+
+// ── NOTES ──────────────────────────────────────────
+function saveNote(text) {
+  notes.unshift({text, time: new Date().toLocaleString()});
+  if (notes.length>50) notes.pop();
+  s('j_notes', JSON.stringify(notes));
+  showToast('NOTE SAVED');
+}
+function renderNotes() {
+  const c=el('notesList');
+  if (!notes.length) { c.innerHTML='<div style="color:var(--dim);text-align:center;padding:20px;font-size:13px">No notes yet. Say "Note that..."</div>'; return; }
+  c.innerHTML=notes.map((n,i)=>
+    `<div class="note-item"><div><div class="note-txt">${n.text}</div><div class="note-time">${n.time}</div></div>
+    <button class="del-btn" onclick="delNote(${i})">✕</button></div>`).join('');
+}
+function delNote(i) { notes.splice(i,1); s('j_notes',JSON.stringify(notes)); renderNotes(); }
+
+// ── DOM ────────────────────────────────────────────
+function addLine(role, text, action) {
+  const t=el('ts'), d=document.createElement('div');
+  d.className='tl '+role;
+  const icons={call:'📞',sms:'💬',maps:'🗺️',youtube:'▶️',search:'🔍',reminder:'⏰',note:'📝',open:'🔗',url:'🔗'};
+  const atag = action&&action.type!=='none'&&action.data
+    ? `<div class="atag">${icons[action.type]||'⚡'} ${action.type.toUpperCase()}</div>` : '';
+  d.innerHTML=`<div class="tspr">${role==='ai'?'JARVIS':'YOU'}</div>${fmt(text)}${atag}`;
+  t.appendChild(d); scrollT(); return d;
+}
+function addDots() {
+  const t=el('ts'),d=document.createElement('div');
+  d.className='tdots'; d.innerHTML='<span></span><span></span><span></span>';
+  t.appendChild(d); scrollT(); return d;
+}
+function removeDots(e){ if(e&&e.parentNode)e.remove(); }
+function addErr(msg) {
+  const t=el('ts'),d=document.createElement('div');
+  d.className='errline'; d.textContent='⚠ '+msg; t.appendChild(d); scrollT();
+}
+function scrollT(){ const t=el('ts'); setTimeout(()=>t.scrollTop=t.scrollHeight,60); }
+function fmt(t){
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/```([\s\S]*?)```/g,'<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g,'<code>$1</code>')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\n/g,'<br/>');
+}
+function setHud(s){ el('hud').className='hud '+(s==='idle'?'':s); }
+function setSt(t){ el('stLbl').textContent=t; }
+function setOrb(c){ el('orbL').textContent=c; }
+function setStatus(state,label){
+  const d=el('sDot'),sp=el('sText');
+  d.className='dot'+(state==='on'?' on':state==='err'?' err':state==='connecting'?' spin':'');
+  sp.textContent=label;
+}
+
+// ── HEALTH ─────────────────────────────────────────
+async function checkHealth(){
+  if(!url)return; setStatus('connecting','CHECKING');
+  try{
+    const r=await fetch(url+'/health',{mode:'cors'});
+    if(r.ok){setStatus('on','ONLINE');showToast('JARVIS ONLINE');}
+    else setStatus('err','ERROR');
+  }catch{ setStatus('err','UNREACHABLE'); }
+}
+
+// ── MODALS ─────────────────────────────────────────
+function openM(id){ if(id==='notesM')renderNotes(); el(id).classList.add('open'); }
+function closeM(id){ el(id).classList.remove('open'); }
+function bgClose(e,id){ if(e.target.classList.contains('overlay'))closeM(id); }
+
+// ── CLEAR ──────────────────────────────────────────
+async function clearAll(){
+  stopSpeak(); el('ts').innerHTML='';
+  if(url) try{ await fetch(url+'/reset',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({session_id:SID}),mode:'cors'}); }catch{}
+  setHud('idle'); setSt(wakeMode?'LISTENING FOR "HEY JARVIS"':'STANDBY');
+  showToast('MEMORY CLEARED');
+}
+
+// ── TOAST ──────────────────────────────────────────
+function showToast(msg){
+  const t=el('toast'); t.textContent=msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+</script>
+</body>
+</html>
