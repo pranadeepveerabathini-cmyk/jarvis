@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no"/>
+<title>JARVIS EDU OS</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#020209;--s1:#080814;--cyan:#00e5ff;--blue:#1a6fff;
+  --grn:#00ff99;--gold:#ffd060;--red:#ff3366;--pur:#8b5cf6;
+  --txt:#c8d8f0;--dim:#334466;--bdr:rgba(0,180,255,0.12);
+  --surf:rgba(0,180,255,0.05);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{min-height:100%;background:var(--bg);color:var(--txt);font-family:'Rajdhani',sans-serif;overflow-x:hidden;}
+body{padding-bottom:80px;}
+
+/* BG */
+.bg-grid{position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(rgba(0,180,255,0.022) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(0,180,255,0.022) 1px,transparent 1px);
+  background-size:40px 40px;}
+
+/* HEADER */
+header{position:sticky;top:0;z-index:50;
+  background:rgba(2,2,9,0.92);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--bdr);padding:12px 16px;}
+.hdr-top{display:flex;justify-content:space-between;align-items:center;}
+.brand{font-family:'Orbitron',monospace;font-size:16px;font-weight:900;
+  letter-spacing:.22em;color:var(--cyan);
+  text-shadow:0 0 16px rgba(0,229,255,.5);}
+.brand span{color:rgba(0,229,255,.5);font-size:11px;display:block;
+  letter-spacing:.15em;margin-top:2px;}
+.hdr-btns{display:flex;gap:8px;}
+.hbtn{background:none;border:1px solid var(--bdr);color:var(--dim);
+  padding:6px 10px;border-radius:8px;font-size:11px;cursor:pointer;
+  font-family:'Orbitron',monospace;letter-spacing:.06em;transition:all .2s;}
+.hbtn:hover{border-color:var(--cyan);color:var(--cyan);}
+.hdr-info{margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;}
+.info-chip{font-size:11px;color:var(--dim);font-family:'Space Mono',monospace;
+  display:flex;align-items:center;gap:5px;}
+.info-chip b{color:var(--txt);}
+
+/* MAIN */
+main{position:relative;z-index:1;padding:16px;}
+
+/* OVERALL STATS */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;
+  padding:14px 10px;text-align:center;}
+.stat-val{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;
+  margin-bottom:4px;transition:color .3s;}
+.stat-lbl{font-size:10px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;}
+
+/* SECTION TITLE */
+.sec-title{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.2em;
+  color:var(--dim);text-transform:uppercase;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;}
+.sec-title::after{content:'';flex:1;height:1px;background:var(--bdr);}
+
+/* SUBJECT CARDS */
+.subjects{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.sub-card{background:var(--surf);border:1px solid var(--bdr);border-radius:14px;
+  padding:14px;transition:border-color .2s;overflow:hidden;position:relative;}
+.sub-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;
+  border-radius:3px 0 0 3px;background:var(--accent-color,var(--cyan));}
+.sub-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+.sub-name-wrap{}
+.sub-name{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;
+  color:var(--txt);letter-spacing:.08em;}
+.sub-full{font-size:11px;color:var(--dim);margin-top:2px;font-family:'Space Mono',monospace;}
+.sub-type{font-size:9px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;
+  background:var(--surf);border:1px solid var(--bdr);padding:2px 7px;border-radius:10px;margin-top:4px;display:inline-block;}
+.sub-pct{font-family:'Orbitron',monospace;font-size:24px;font-weight:900;
+  transition:color .3s;text-align:right;}
+.sub-pct small{display:block;font-size:9px;letter-spacing:.1em;color:var(--dim);margin-top:2px;}
+
+.progress-bar{height:4px;background:rgba(255,255,255,0.06);border-radius:2px;margin-bottom:10px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:2px;transition:width .5s ease, background .3s;}
+
+.sub-stats{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+.att-count{font-family:'Space Mono',monospace;font-size:13px;}
+.att-count span{color:var(--dim);}
+.bunk-info{font-size:11px;text-align:right;font-family:'Space Mono',monospace;}
+.bunk-safe{color:var(--grn);}
+.bunk-need{color:var(--red);}
+.bunk-ok{color:var(--gold);}
+
+.sub-actions{display:flex;gap:8px;}
+.act-btn{flex:1;padding:9px 0;border-radius:9px;border:1px solid;cursor:pointer;
+  font-family:'Orbitron',monospace;font-size:10px;letter-spacing:.06em;
+  font-weight:700;transition:all .2s;text-align:center;}
+.btn-present{background:rgba(0,255,153,.08);border-color:rgba(0,255,153,.3);color:var(--grn);}
+.btn-present:hover{background:rgba(0,255,153,.18);border-color:var(--grn);}
+.btn-absent{background:rgba(255,51,102,.08);border-color:rgba(255,51,102,.3);color:var(--red);}
+.btn-absent:hover{background:rgba(255,51,102,.18);border-color:var(--red);}
+.btn-edit{background:var(--surf);border-color:var(--bdr);color:var(--dim);
+  flex:0 0 40px;font-size:14px;}
+.btn-edit:hover{border-color:var(--cyan);color:var(--cyan);}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:200;
+  display:none;align-items:flex-end;backdrop-filter:blur(4px);}
+.overlay.open{display:flex;}
+.modal{width:100%;background:rgba(5,5,18,.98);border-top:1px solid var(--bdr);
+  border-radius:20px 20px 0 0;padding:24px 20px;animation:sup .3s ease-out;}
+@keyframes sup{from{transform:translateY(60px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.modal-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:.2em;
+  color:var(--cyan);margin-bottom:20px;}
+.modal-sub{font-size:11px;color:var(--dim);margin-bottom:16px;font-family:'Space Mono',monospace;}
+.inp-row{display:flex;gap:10px;margin-bottom:16px;}
+.inp-group{flex:1;}
+.inp-label{font-size:10px;letter-spacing:.1em;color:var(--dim);text-transform:uppercase;
+  margin-bottom:5px;display:block;}
+.num-inp{width:100%;background:var(--surf);border:1px solid var(--bdr);
+  color:var(--txt);font-family:'Space Mono',monospace;font-size:20px;
+  padding:10px;border-radius:9px;outline:none;text-align:center;}
+.num-inp:focus{border-color:var(--cyan);}
+.modal-btns{display:flex;gap:10px;}
+.mbtn-save{flex:1;background:linear-gradient(135deg,var(--blue),var(--cyan));
+  border:none;color:#000;font-family:'Orbitron',monospace;font-size:11px;
+  font-weight:700;padding:12px;border-radius:9px;cursor:pointer;letter-spacing:.08em;}
+.mbtn-cancel{background:var(--surf);border:1px solid var(--bdr);color:var(--txt);
+  font-family:'Orbitron',monospace;font-size:11px;padding:12px 16px;
+  border-radius:9px;cursor:pointer;}
+
+/* RESET CONFIRM */
+.reset-modal{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;
+  display:none;align-items:center;justify-content:center;padding:20px;}
+.reset-modal.open{display:flex;}
+.reset-box{background:rgba(5,5,20,.98);border:1px solid rgba(255,51,102,.3);
+  border-radius:16px;padding:24px;max-width:320px;width:100%;text-align:center;}
+.reset-title{font-family:'Orbitron',monospace;font-size:14px;color:var(--red);
+  margin-bottom:10px;letter-spacing:.1em;}
+.reset-msg{font-size:13px;color:var(--dim);margin-bottom:20px;line-height:1.5;}
+.reset-btns{display:flex;gap:10px;}
+.rbtn-yes{flex:1;background:rgba(255,51,102,.15);border:1px solid var(--red);
+  color:var(--red);font-family:'Orbitron',monospace;font-size:11px;
+  padding:11px;border-radius:9px;cursor:pointer;letter-spacing:.06em;}
+.rbtn-no{flex:1;background:var(--surf);border:1px solid var(--bdr);color:var(--txt);
+  font-family:'Orbitron',monospace;font-size:11px;padding:11px;
+  border-radius:9px;cursor:pointer;}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:rgba(0,229,255,.1);border:1px solid var(--bdr);color:var(--cyan);
+  font-size:10px;font-family:'Orbitron',monospace;padding:8px 16px;
+  border-radius:20px;letter-spacing:.07em;opacity:0;transition:all .3s;
+  pointer-events:none;white-space:nowrap;z-index:400;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* WEEK SCHEDULE */
+.schedule-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;margin-bottom:20px;}
+.day-col{background:var(--surf);border:1px solid var(--bdr);border-radius:8px;padding:6px 4px;}
+.day-name{font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.1em;
+  color:var(--dim);text-align:center;margin-bottom:5px;text-transform:uppercase;}
+.day-sub{font-size:9px;color:var(--txt);text-align:center;margin-bottom:3px;
+  background:rgba(0,180,255,.08);border-radius:4px;padding:2px 0;
+  font-family:'Space Mono',monospace;}
+
+/* ALERTS */
+.alert-bar{border-radius:12px;padding:12px 14px;margin-bottom:14px;
+  display:flex;align-items:center;gap:10px;animation:fup .3s ease-out;}
+@keyframes fup{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+.alert-bar.danger{background:rgba(255,51,102,.08);border:1px solid rgba(255,51,102,.25);}
+.alert-bar.warning{background:rgba(255,208,96,.08);border:1px solid rgba(255,208,96,.25);}
+.alert-icon{font-size:18px;flex-shrink:0;}
+.alert-txt{font-size:13px;line-height:1.4;}
+.alert-txt strong{font-family:'Orbitron',monospace;font-size:11px;}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr-top">
+    <div class="brand">
+      JARVIS EDU OS
+      <span>ATTENDANCE INTELLIGENCE</span>
+    </div>
+    <div class="hdr-btns">
+      <button class="hbtn" onclick="showReset()">↺ RESET</button>
+      <button class="hbtn" onclick="toggleSchedule()" id="schedBtn">📅 SCHEDULE</button>
+    </div>
+  </div>
+  <div class="hdr-info">
+    <div class="info-chip">👤 <b>Pranadeep Veerabathini</b></div>
+    <div class="info-chip">🎓 <b>3 AIML-B</b></div>
+    <div class="info-chip">📅 <b>Sem I · 2026–27</b></div>
+    <div class="info-chip">📏 Min: <b>75%</b></div>
+  </div>
+</header>
+
+<main>
+  <!-- ALERTS -->
+  <div id="alertsBox"></div>
+
+  <!-- OVERALL STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-val" id="overallPct" style="color:var(--cyan)">--%</div>
+      <div class="stat-lbl">Overall</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="safeCount" style="color:var(--grn)">--</div>
+      <div class="stat-lbl">Safe ✓</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-val" id="dangerCount" style="color:var(--red)">--</div>
+      <div class="stat-lbl">Danger ⚠</div>
+    </div>
+  </div>
+
+  <!-- SCHEDULE (hidden by default) -->
+  <div id="scheduleSection" style="display:none;margin-bottom:20px;">
+    <div class="sec-title">This Week's Schedule</div>
+    <div class="schedule-grid" id="scheduleGrid"></div>
+  </div>
+
+  <!-- THEORY SUBJECTS -->
+  <div class="sec-title">Theory Subjects</div>
+  <div class="subjects" id="theoryCards"></div>
+
+  <!-- LAB SUBJECTS -->
+  <div class="sec-title">Laboratory</div>
+  <div class="subjects" id="labCards"></div>
+</main>
+
+<!-- EDIT MODAL -->
+<div class="overlay" id="editModal" onclick="closeEdit(event)">
+  <div class="modal">
+    <div class="modal-title">✏️ EDIT ATTENDANCE</div>
+    <div class="modal-sub" id="editSubName">Subject Name</div>
+    <div class="inp-row">
+      <div class="inp-group">
+        <span class="inp-label">Attended</span>
+        <input type="number" class="num-inp" id="editAttended" min="0" placeholder="0"/>
+      </div>
+      <div class="inp-group">
+        <span class="inp-label">Total Classes</span>
+        <input type="number" class="num-inp" id="editTotal" min="0" placeholder="0"/>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="mbtn-cancel" onclick="closeEditModal()">CANCEL</button>
+      <button class="mbtn-save" onclick="saveEdit()">SAVE</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESET CONFIRM -->
+<div class="reset-modal" id="resetModal">
+  <div class="reset-box">
+    <div class="reset-title">⚠ RESET ALL DATA</div>
+    <div class="reset-msg">This will clear all attendance records. This cannot be undone.</div>
+    <div class="reset-btns">
+      <button class="rbtn-no" onclick="closeReset()">CANCEL</button>
+      <button class="rbtn-yes" onclick="confirmReset()">RESET</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────
+const MIN_PCT = 75;
+
+const SUBJECTS = [
+  // Theory
+  {id:'daa',  name:'DAA',      full:'Design & Analysis of Algorithms',        weekly:4, type:'theory', color:'#00e5ff'},
+  {id:'ml',   name:'ML',       full:'Machine Learning',                        weekly:3, type:'theory', color:'#8b5cf6'},
+  {id:'cn',   name:'CN',       full:'Computer Networks',                       weekly:3, type:'theory', color:'#00ff99'},
+  {id:'befa', name:'BEFA',     full:'Business Economics & Financial Analysis', weekly:4, type:'theory', color:'#ffd060'},
+  {id:'wp',   name:'WP',       full:'Web Programming (Prof. Elective I)',      weekly:3, type:'theory', color:'#ff6a6a'},
+  {id:'ipr',  name:'IPR',      full:'Intellectual Property Rights',            weekly:2, type:'theory', color:'#ff8c42'},
+  // Labs
+  {id:'mllab',    name:'ML Lab',      full:'Machine Learning Lab',               weekly:1, type:'lab', color:'#8b5cf6'},
+  {id:'cnlab',    name:'CN Lab',      full:'Computer Networks Lab',              weekly:1, type:'lab', color:'#00ff99'},
+  {id:'aecslab',  name:'AECS Lab',    full:'Adv. English Communication Skills Lab', weekly:1, type:'lab', color:'#ff6a6a'},
+  {id:'flutterlab',name:'Flutter Lab',full:'UI Design – Flutter Lab',            weekly:1, type:'lab', color:'#00b4d8'},
+];
+
+const SCHEDULE = {
+  MON:  ['DAA','AECS Lab','BEFA','ML'],
+  TUE:  ['CN Lab','DAA','BEFA'],
+  WED:  ['WP','CN','DAA','ML Lab'],
+  THU:  ['WP','DAA','BEFA','ML','IPR'],
+  FRI:  ['BEFA','ML','CN','Flutter Lab'],
+  SAT:  ['CN','WP','IPR'],
+};
+
+// ── STATE ─────────────────────────────────────────
+let attendance = {};
+let editingId = null;
+
+function load() {
+  const saved = localStorage.getItem('jarvis_edu_att');
+  if (saved) {
+    attendance = JSON.parse(saved);
+  } else {
+    SUBJECTS.forEach(s => { attendance[s.id] = {attended:0, total:0}; });
+  }
+}
+
+function save() {
+  localStorage.setItem('jarvis_edu_att', JSON.stringify(attendance));
+}
+
+// ── CALCULATIONS ──────────────────────────────────
+function getPct(a, t) {
+  if (t === 0) return null;
+  return Math.round((a / t) * 100);
+}
+
+function getSafeBunks(a, t) {
+  // How many more can miss: a/(t+b) >= 0.75 → b <= (a - 0.75t)/0.75
+  const bunks = Math.floor((a - MIN_PCT/100 * t) / (MIN_PCT/100));
+  return bunks > 0 ? bunks : 0;
+}
+
+function getClassesNeeded(a, t) {
+  // Attend n more: (a+n)/(t+n) >= 0.75 → n >= (0.75t - a)/0.25
+  const needed = Math.ceil((MIN_PCT/100 * t - a) / (1 - MIN_PCT/100));
+  return needed > 0 ? needed : 0;
+}
+
+function getColor(pct) {
+  if (pct === null) return 'var(--dim)';
+  if (pct >= MIN_PCT) return 'var(--grn)';
+  if (pct >= MIN_PCT - 5) return 'var(--gold)';
+  return 'var(--red)';
+}
+
+// ── RENDER ────────────────────────────────────────
+function render() {
+  renderCards('theory', 'theoryCards');
+  renderCards('lab', 'labCards');
+  renderOverall();
+  renderAlerts();
+}
+
+function renderCards(type, containerId) {
+  const container = document.getElementById(containerId);
+  const subs = SUBJECTS.filter(s => s.type === type);
+  container.innerHTML = subs.map(s => cardHTML(s)).join('');
+}
+
+function cardHTML(s) {
+  const {attended, total} = attendance[s.id] || {attended:0, total:0};
+  const pct = getPct(attended, total);
+  const pctStr = pct !== null ? pct + '%' : '--%';
+  const color = getColor(pct);
+  const fillW = pct !== null ? Math.min(pct, 100) : 0;
+
+  let bunkInfo = '';
+  if (pct === null) {
+    bunkInfo = `<span style="color:var(--dim)">No data yet</span>`;
+  } else if (pct >= MIN_PCT) {
+    const safe = getSafeBunks(attended, total);
+    bunkInfo = safe > 0
+      ? `<span class="bunk-safe">✓ ${safe} safe bunk${safe>1?'s':''}</span>`
+      : `<span class="bunk-ok">⚡ Bunk = risky</span>`;
+  } else {
+    const needed = getClassesNeeded(attended, total);
+    bunkInfo = `<span class="bunk-need">⚠ Attend ${needed} more</span>`;
+  }
+
+  return `
+    <div class="sub-card" id="card-${s.id}" style="--accent-color:${s.color}">
+      <div class="sub-card-top">
+        <div class="sub-name-wrap">
+          <div class="sub-name">${s.name}</div>
+          <div class="sub-full">${s.full}</div>
+          <div class="sub-type">${s.type === 'lab' ? '🔬 Lab' : '📖 Theory'} · ${s.weekly}×/week</div>
+        </div>
+        <div>
+          <div class="sub-pct" style="color:${color}">${pctStr}
+            <small>${attended}/${total}</small>
+          </div>
+        </div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width:${fillW}%;background:${color};"></div>
+      </div>
+      <div class="sub-stats">
+        <div class="att-count">
+          <span>Attended: </span><b style="color:${color}">${attended}</b>
+          <span> / Total: </span><b>${total}</b>
+        </div>
+        <div class="bunk-info">${bunkInfo}</div>
+      </div>
+      <div class="sub-actions">
+        <button class="act-btn btn-present" onclick="markPresent('${s.id}')">✅ PRESENT</button>
+        <button class="act-btn btn-absent" onclick="markAbsent('${s.id}')">❌ ABSENT</button>
+        <button class="act-btn btn-edit" onclick="openEdit('${s.id}')">✏️</button>
+      </div>
+    </div>`;
+}
+
+function renderOverall() {
+  let totalA = 0, totalT = 0, safe = 0, danger = 0;
+  SUBJECTS.forEach(s => {
+    const {attended, total} = attendance[s.id] || {attended:0, total:0};
+    totalA += attended; totalT += total;
+    if (total > 0) {
+      const pct = getPct(attended, total);
+      if (pct >= MIN_PCT) safe++; else danger++;
+    }
+  });
+  const overall = getPct(totalA, totalT);
+  const overallEl = document.getElementById('overallPct');
+  overallEl.textContent = overall !== null ? overall + '%' : '--%';
+  overallEl.style.color = getColor(overall);
+  document.getElementById('safeCount').textContent = safe;
+  document.getElementById('dangerCount').textContent = danger;
+}
+
+function renderAlerts() {
+  const box = document.getElementById('alertsBox');
+  const alerts = [];
+  SUBJECTS.forEach(s => {
+    const {attended, total} = attendance[s.id] || {attended:0, total:0};
+    if (total === 0) return;
+    const pct = getPct(attended, total);
+    if (pct < MIN_PCT) {
+      const needed = getClassesNeeded(attended, total);
+      alerts.push({type:'danger', msg:`<strong>${s.name}</strong> — ${pct}% · Attend ${needed} more class${needed>1?'es':''} to reach 75%`});
+    } else if (pct < MIN_PCT + 5) {
+      alerts.push({type:'warning', msg:`<strong>${s.name}</strong> — ${pct}% · Close to minimum. Be careful.`});
+    }
+  });
+  if (alerts.length === 0) { box.innerHTML = ''; return; }
+  box.innerHTML = alerts.map(a =>
+    `<div class="alert-bar ${a.type}">
+      <span class="alert-icon">${a.type==='danger'?'🚨':'⚠️'}</span>
+      <span class="alert-txt">${a.msg}</span>
+    </div>`).join('');
+}
+
+function renderSchedule() {
+  const grid = document.getElementById('scheduleGrid');
+  const days = ['MON','TUE','WED','THU','FRI','SAT'];
+  grid.innerHTML = days.map(day => `
+    <div class="day-col">
+      <div class="day-name">${day}</div>
+      ${(SCHEDULE[day]||[]).map(sub => `<div class="day-sub">${sub}</div>`).join('')}
+    </div>`).join('');
+}
+
+// ── ACTIONS ───────────────────────────────────────
+function markPresent(id) {
+  if (!attendance[id]) attendance[id] = {attended:0,total:0};
+  attendance[id].attended++;
+  attendance[id].total++;
+  save(); render();
+  const s = SUBJECTS.find(x=>x.id===id);
+  showToast(`✅ ${s.name} — PRESENT`);
+}
+
+function markAbsent(id) {
+  if (!attendance[id]) attendance[id] = {attended:0,total:0};
+  attendance[id].total++;
+  save(); render();
+  const s = SUBJECTS.find(x=>x.id===id);
+  const pct = getPct(attendance[id].attended, attendance[id].total);
+  showToast(`❌ ${s.name} — ABSENT · ${pct}%`);
+}
+
+function openEdit(id) {
+  editingId = id;
+  const s = SUBJECTS.find(x=>x.id===id);
+  const {attended, total} = attendance[id] || {attended:0, total:0};
+  document.getElementById('editSubName').textContent = s.name + ' — ' + s.full;
+  document.getElementById('editAttended').value = attended;
+  document.getElementById('editTotal').value = total;
+  document.getElementById('editModal').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.remove('open');
+  editingId = null;
+}
+
+function closeEdit(e) {
+  if (e.target.classList.contains('overlay')) closeEditModal();
+}
+
+function saveEdit() {
+  const a = parseInt(document.getElementById('editAttended').value) || 0;
+  const t = parseInt(document.getElementById('editTotal').value) || 0;
+  if (a > t) { showToast('⚠ Attended cannot exceed total'); return; }
+  attendance[editingId] = {attended: a, total: t};
+  save(); render(); closeEditModal();
+  showToast('✅ Attendance updated');
+}
+
+function toggleSchedule() {
+  const sec = document.getElementById('scheduleSection');
+  const btn = document.getElementById('schedBtn');
+  if (sec.style.display === 'none') {
+    sec.style.display = 'block';
+    btn.textContent = '📅 HIDE';
+    renderSchedule();
+  } else {
+    sec.style.display = 'none';
+    btn.textContent = '📅 SCHEDULE';
+  }
+}
+
+function showReset() { document.getElementById('resetModal').classList.add('open'); }
+function closeReset() { document.getElementById('resetModal').classList.remove('open'); }
+function confirmReset() {
+  SUBJECTS.forEach(s => { attendance[s.id] = {attended:0, total:0}; });
+  save(); render(); closeReset();
+  showToast('↺ All data cleared');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ── INIT ──────────────────────────────────────────
+load();
+render();
+</script>
+</body>
+</html>
